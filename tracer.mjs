@@ -1,15 +1,15 @@
 // tracer.mjs — Pure state functions for subagent trace accumulation. No I/O.
 
-const PENDING_TTL_MS = 5 * 60 * 1000;
+export const PENDING_TTL_MS = 5 * 60 * 1000;
 
 export function createTrace(event) {
     return {
-        agentId: event.agentId,
-        agentName: event.data.agentName,
-        agentDisplayName: event.data.agentDisplayName,
-        agentDescription: event.data.agentDescription,
-        toolCallId: event.data.toolCallId,
-        startedAt: event.timestamp,
+        agentId: event.agentId ?? null,
+        agentName: event.data?.agentName ?? null,
+        agentDisplayName: event.data?.agentDisplayName ?? null,
+        agentDescription: event.data?.agentDescription ?? null,
+        toolCallId: event.data?.toolCallId ?? null,
+        startedAt: event.timestamp ?? null,
         invocationArgs: null,
         availableTools: null,
         systemPrompts: [],
@@ -122,7 +122,9 @@ export function routeEvent(traces, event) {
             trace.model = event.data.model ?? null;
             trace.durationMs = event.data.durationMs ?? null;
             trace.totalToolCalls = event.data.totalToolCalls ?? null;
-            trace.failureReason = event.data.error ?? null;
+            trace.failureReason = typeof event.data.error === 'string'
+                ? event.data.error
+                : event.data.error?.message ?? null;
             break;
     }
 }

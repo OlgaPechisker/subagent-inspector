@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { createTrace, routeEvent, linkInvocation, cleanupPendingInvocations } from '../tracer.mjs';
+import { createTrace, routeEvent, linkInvocation, cleanupPendingInvocations, PENDING_TTL_MS } from '../tracer.mjs';
 
 const makeStartEvent = (agentId = 'agent-1', toolCallId = 'tc-1') => ({
     type: 'subagent.started',
@@ -20,6 +20,12 @@ describe('createTrace', () => {
         assert.deepEqual(trace.toolCalls, []);
         assert.deepEqual(trace.messages, []);
         assert.equal(trace.status, null);
+    });
+
+    it('returns null fields when data is absent', () => {
+        const trace = createTrace({ agentId: 'a1', timestamp: 't0' });
+        assert.equal(trace.agentName, null);
+        assert.equal(trace.agentId, 'a1');
     });
 });
 
@@ -106,6 +112,16 @@ describe('routeEvent', () => {
         assert.equal(t.status, 'failed');
         assert.equal(t.failureReason, 'Context limit exceeded');
     });
+
+    it('normalises failureReason to string when error is an object', () => {
+        const traces = new Map([['a1', createTrace(makeStartEvent('a1'))]]);
+        routeEvent(traces, {
+            type: 'subagent.failed', agentId: 'a1', timestamp: 't1',
+            data: { error: { message: 'Rate limit', code: 429 }, durationMs: 0 }
+        });
+        assert.equal(typeof traces.get('a1').failureReason, 'string');
+        assert.equal(traces.get('a1').failureReason, 'Rate limit');
+    });
 });
 
 describe('linkInvocation', () => {
@@ -128,7 +144,7 @@ describe('linkInvocation', () => {
 describe('cleanupPendingInvocations', () => {
     it('removes entries older than 5 minutes', () => {
         const pending = new Map([
-            ['old', { args: {}, timestamp: Date.now() - 6 * 60 * 1000 }],
+            ['old', { args: {}, timestamp: Date.now() - (PENDING_TTL_MS + 1000) }],
             ['fresh', { args: {}, timestamp: Date.now() }],
         ]);
         cleanupPendingInvocations(pending);
