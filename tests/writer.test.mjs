@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdirSync, rmSync, existsSync, readdirSync, writeFileSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
-import { buildFileName, ensureLogDir, writeLog, listRecentLogs, readLogMarkdown } from '../writer.mjs';
+import { buildFileName, ensureLogDir, writeLog, writeLogSync, listRecentLogs, readLogMarkdown } from '../writer.mjs';
 
 function makeFakeTrace(overrides = {}) {
     return {
@@ -42,6 +42,11 @@ describe('buildFileName', () => {
     it('sanitizes special characters in agentName', () => {
         const name = buildFileName(makeFakeTrace({ agentName: 'my agent!!' }));
         assert.ok(!name.includes('!'), 'should not contain !');
+    });
+
+    it('falls back to "unknown" when agentName is null', () => {
+        const name = buildFileName(makeFakeTrace({ agentName: null }));
+        assert.ok(name.includes('unknown'), 'should use fallback name');
     });
 });
 
@@ -82,6 +87,10 @@ describe('writeLog', () => {
         const parsed = JSON.parse(readFileSync(jsonPath, 'utf-8'));
         assert.equal(parsed.schemaVersion, '1.0');
         assert.equal(parsed.meta.agentName, 'explore');
+    });
+
+    it('writeLogSync is the same function reference as writeLog', () => {
+        assert.strictEqual(writeLogSync, writeLog);
     });
 });
 
