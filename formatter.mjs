@@ -27,7 +27,7 @@ export function toLogObject(trace) {
 
 function buildConversation(trace) {
     const entries = [
-        ...trace.toolCalls.map(c => ({
+        ...(trace.toolCalls ?? []).map(c => ({
             type: 'tool_call',
             timestamp: c.startedAt ?? c.completedAt,
             toolName: c.toolName,
@@ -38,19 +38,19 @@ function buildConversation(trace) {
             error: c.error,
             durationMs: c.durationMs,
         })),
-        ...trace.messages.map(m => ({
+        ...(trace.messages ?? []).map(m => ({
             type: 'assistant_message',
             timestamp: m.timestamp,
             content: m.content,
         })),
-        ...trace.permissions.map(p => ({
+        ...(trace.permissions ?? []).map(p => ({
             type: 'permission',
             timestamp: p.requestedAt,
             kind: p.kind,
             requestId: p.requestId,
             decision: p.decision,
         })),
-        ...trace.errors.map(e => ({
+        ...(trace.errors ?? []).map(e => ({
             type: 'error',
             timestamp: e.timestamp,
             errorType: e.errorType,
@@ -68,9 +68,9 @@ export function toMarkdown(trace) {
     const status = trace.status === 'completed' ? '✅ completed' :
                    trace.status === 'failed'    ? '❌ failed' : '⚠️ partial';
     const dur = trace.durationMs != null ? `${(trace.durationMs / 1000).toFixed(1)}s` : 'unknown';
-    const calls = trace.totalToolCalls ?? trace.toolCalls.length;
+    const calls = trace.totalToolCalls ?? trace.toolCalls?.length ?? 0;
 
-    let md = `# Subagent Log: ${trace.agentDisplayName}\n\n`;
+    let md = `# Subagent Log: ${trace.agentDisplayName ?? trace.agentName ?? 'Unknown'}\n\n`;
     md += `**Status:** ${status} | **Duration:** ${dur} | **Model:** ${trace.model ?? 'unknown'}\n`;
     md += `**Tool calls:** ${calls} | **Agent:** ${trace.agentName}\n\n`;
 
@@ -82,7 +82,7 @@ export function toMarkdown(trace) {
         md += `## Available Tools\n\n${trace.availableTools.length ? trace.availableTools.join(', ') : '(none)'}\n\n`;
     }
 
-    if (trace.systemPrompts.length > 0) {
+    if (trace.systemPrompts?.length > 0) {
         const raw = trace.systemPrompts[0].content;
         const excerpt = raw.slice(0, 1000);
         md += `## System Prompt (first 1000 chars)\n\n\`\`\`\n${excerpt}${raw.length > 1000 ? '\n...' : ''}\n\`\`\`\n\n`;
@@ -114,8 +114,9 @@ export function toMarkdown(trace) {
 }
 
 export function toTimelineSummary(trace, jsonPath) {
-    const icon = trace.status === 'completed' ? '✅' : '❌';
+    const icon = trace.status === 'completed' ? '✅'
+               : trace.status === 'failed'    ? '❌' : '⚠️';
     const dur = trace.durationMs != null ? ` in ${(trace.durationMs / 1000).toFixed(1)}s` : '';
-    const calls = trace.totalToolCalls ?? trace.toolCalls.length;
+    const calls = trace.totalToolCalls ?? trace.toolCalls?.length ?? 0;
     return `[subagent-inspector] ${trace.agentName} ${icon} ${calls} tool calls${dur} → ${jsonPath}`;
 }

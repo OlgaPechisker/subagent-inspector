@@ -64,6 +64,13 @@ describe('toLogObject', () => {
         const obj = toLogObject(makeTrace({ status: null }));
         assert.equal(obj.meta.status, 'partial');
     });
+
+    it('handles null messages/permissions/errors without crashing', () => {
+        const obj = toLogObject(makeTrace({ messages: null, permissions: null, errors: null }));
+        assert.deepEqual(obj.conversation.filter(e => e.type === 'assistant_message'), []);
+        assert.deepEqual(obj.conversation.filter(e => e.type === 'permission'), []);
+        assert.deepEqual(obj.conversation.filter(e => e.type === 'error'), []);
+    });
 });
 
 describe('toMarkdown', () => {
@@ -108,6 +115,38 @@ describe('toMarkdown', () => {
         assert.ok(md.includes('💬'));
         assert.ok(md.includes('Found 3 test files'));
     });
+
+    it('does not crash when systemPrompts is null', () => {
+        assert.doesNotThrow(() => toMarkdown(makeTrace({ systemPrompts: null })));
+    });
+
+    it('does not crash when toolCalls is null and totalToolCalls is null', () => {
+        assert.doesNotThrow(() => toMarkdown(makeTrace({ toolCalls: null, totalToolCalls: null })));
+    });
+
+    it('shows ⚠️ partial for null status', () => {
+        const md = toMarkdown(makeTrace({ status: null }));
+        assert.ok(md.includes('⚠️ partial'));
+    });
+
+    it('renders 🔐 permission entries in work log', () => {
+        const trace = makeTrace({ permissions: [{ requestId: 'r2', requestedAt: '2026-04-29T10:00:03.000Z', kind: 'write', completedAt: null, decision: 'denied-interactively-by-user' }] });
+        const md = toMarkdown(trace);
+        assert.ok(md.includes('🔐'));
+        assert.ok(md.includes('write'));
+    });
+
+    it('renders ❌ error entries in work log', () => {
+        const trace = makeTrace({ errors: [{ timestamp: '2026-04-29T10:00:04.000Z', errorType: 'model_call', message: 'Rate limit exceeded', stack: null }] });
+        const md = toMarkdown(trace);
+        assert.ok(md.includes('Error (model_call)'));
+        assert.ok(md.includes('Rate limit exceeded'));
+    });
+
+    it('falls back to agentName when agentDisplayName is null', () => {
+        const md = toMarkdown(makeTrace({ agentDisplayName: null }));
+        assert.ok(md.startsWith('# Subagent Log: explore'));
+    });
 });
 
 describe('toTimelineSummary', () => {
@@ -122,5 +161,10 @@ describe('toTimelineSummary', () => {
     it('shows ❌ for failed traces', () => {
         const summary = toTimelineSummary(makeTrace({ status: 'failed' }), '/log.json');
         assert.ok(summary.includes('❌'));
+    });
+
+    it('shows ⚠️ for partial/null status', () => {
+        const summary = toTimelineSummary(makeTrace({ status: null }), '/log.json');
+        assert.ok(summary.includes('⚠️'));
     });
 });
