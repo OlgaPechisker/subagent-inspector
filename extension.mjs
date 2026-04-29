@@ -18,21 +18,19 @@ cleanupInterval.unref(); // don't keep the process alive just for this
 
 const session = await joinSession({
     commands: [createSlashCommand(sessionRef, DEFAULT_LOG_DIR)],
-    hooks: {
-        onSessionStart: async () => {
-            await session.log('[subagent-inspector] Loaded — watching for subagent invocations', { ephemeral: true });
-        },
-    },
 });
 
 // Assign the real session to the ref so the slash command handler can use it
 sessionRef.current = session;
 
+// Log startup notification (fire-and-forget; ephemeral so it disappears from history)
+session.log('[subagent-inspector] Loaded — watching for subagent invocations', { ephemeral: true }).catch(() => {});
+
 // Main event handler
 session.on((event) => {
     // Capture task tool invocations from the ROOT agent (no agentId) to record invocation args.
     // tool.execution_start fires for the parent session's task tool calls.
-    if (event.type === 'tool.execution_start' && !event.agentId && event.data.toolName === 'task') {
+    if (event.type === 'tool.execution_start' && !event.agentId && event.data?.toolName === 'task' && event.data?.toolCallId) {
         pendingInvocations.set(event.data.toolCallId, {
             args: event.data.arguments ?? {},
             timestamp: Date.now(),
@@ -41,14 +39,15 @@ session.on((event) => {
     }
 
     if (event.type === 'subagent.started') {
+        if (!event.agentId || !event.data) return;
         const trace = createTrace(event);
         traces.set(event.agentId, trace);
-        // Link any pending task tool invocation args via toolCallId
         linkInvocation(traces, pendingInvocations, event.agentId, event.data.toolCallId);
         return;
     }
 
     if (event.type === 'subagent.completed' || event.type === 'subagent.failed') {
+        if (!event.agentId) return;
         routeEvent(traces, event);
         const trace = traces.get(event.agentId);
         if (trace) {
@@ -63,8 +62,8 @@ session.on((event) => {
         return;
     }
 
-    // Route all other subagent-scoped events to the appropriate trace
-    routeEvent(traces, event);
+    // Route subagent-scoped events only (root events have no agentId)
+    if (event.agentId) routeEvent(traces, event);
 });
 
 // Flush any in-flight traces on exit (synchronous writes only)
