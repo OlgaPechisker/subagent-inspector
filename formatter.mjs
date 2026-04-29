@@ -42,6 +42,7 @@ function buildConversation(trace) {
             type: 'assistant_message',
             timestamp: m.timestamp,
             content: m.content,
+            toolRequests: m.toolRequests ?? null,
         })),
         ...(trace.permissions ?? []).map(p => ({
             type: 'permission',
@@ -99,8 +100,15 @@ export function toMarkdown(trace) {
                 const durStr = entry.durationMs != null ? ` (${entry.durationMs}ms)` : '';
                 md += `${n++}. ${icon} **${entry.toolName}**${argsStr ? ` \`${argsStr}\`` : ''}${durStr}\n`;
             } else if (entry.type === 'assistant_message') {
-                const snippet = entry.content.slice(0, 120).replace(/\n/g, ' ');
-                md += `${n++}. 💬 ${snippet}${entry.content.length > 120 ? '...' : ''}\n`;
+                if (!entry.content && entry.toolRequests?.length) {
+                    const summary = entry.toolRequests
+                        .map(r => r.intentionSummary ?? r.toolTitle ?? r.name)
+                        .join('; ');
+                    md += `${n++}. 💬 *(requesting: ${summary})*\n`;
+                } else {
+                    const snippet = entry.content.slice(0, 120).replace(/\n/g, ' ');
+                    md += `${n++}. 💬 ${snippet}${entry.content.length > 120 ? '...' : ''}\n`;
+                }
             } else if (entry.type === 'permission') {
                 const icon = entry.decision?.startsWith('approved') ? '✅' : '❌';
                 md += `${n++}. 🔐 Permission: **${entry.kind}** → ${icon} ${entry.decision ?? 'pending'}\n`;

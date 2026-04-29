@@ -71,6 +71,14 @@ describe('toLogObject', () => {
         assert.deepEqual(obj.conversation.filter(e => e.type === 'permission'), []);
         assert.deepEqual(obj.conversation.filter(e => e.type === 'error'), []);
     });
+
+    it('includes toolRequests in assistant_message conversation entries', () => {
+        const toolRequests = [{ name: 'grep', toolCallId: 'tc-x', intentionSummary: 'Find tests', arguments: {} }];
+        const trace = makeTrace({ messages: [{ timestamp: '2026-04-29T10:00:02.000Z', content: '', toolRequests }] });
+        const obj = toLogObject(trace);
+        const msg = obj.conversation.find(e => e.type === 'assistant_message');
+        assert.deepEqual(msg.toolRequests, toolRequests);
+    });
 });
 
 describe('toMarkdown', () => {
@@ -146,6 +154,36 @@ describe('toMarkdown', () => {
     it('falls back to agentName when agentDisplayName is null', () => {
         const md = toMarkdown(makeTrace({ agentDisplayName: null }));
         assert.ok(md.startsWith('# Subagent Log: explore'));
+    });
+
+    it('renders tool request summary when content is empty and toolRequests is present', () => {
+        const trace = makeTrace({
+            messages: [{ timestamp: '2026-04-29T10:00:02.000Z', content: '', toolRequests: [
+                { name: 'powershell', toolCallId: 'tc-b', intentionSummary: 'Run gh pr list', arguments: {} },
+            ] }],
+        });
+        const md = toMarkdown(trace);
+        assert.ok(md.includes('*(requesting: Run gh pr list)*'), `Expected tool request summary in: ${md}`);
+    });
+
+    it('falls back to toolTitle then name when intentionSummary is absent', () => {
+        const trace = makeTrace({
+            messages: [{ timestamp: '2026-04-29T10:00:02.000Z', content: '', toolRequests: [
+                { name: 'grep', toolCallId: 'tc-c', toolTitle: 'Search Files', arguments: {} },
+            ] }],
+        });
+        const md = toMarkdown(trace);
+        assert.ok(md.includes('*(requesting: Search Files)*'), `Expected toolTitle fallback in: ${md}`);
+    });
+
+    it('falls back to name when intentionSummary and toolTitle are absent', () => {
+        const trace = makeTrace({
+            messages: [{ timestamp: '2026-04-29T10:00:02.000Z', content: '', toolRequests: [
+                { name: 'view', toolCallId: 'tc-d', arguments: {} },
+            ] }],
+        });
+        const md = toMarkdown(trace);
+        assert.ok(md.includes('*(requesting: view)*'), `Expected name fallback in: ${md}`);
     });
 });
 
