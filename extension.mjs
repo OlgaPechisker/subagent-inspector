@@ -5,6 +5,7 @@ import { createTrace, routeEvent, linkInvocation, cleanupPendingInvocations } fr
 import { toTimelineSummary } from './formatter.mjs';
 import { writeLogSync, DEFAULT_LOG_DIR } from './writer.mjs';
 import { createSlashCommand } from './commander.mjs';
+import { buildSessionContext } from './session-resolver.mjs';
 
 const traces = new Map();             // Map<agentId, SubagentTrace>
 const pendingInvocations = new Map(); // Map<toolCallId, { args, timestamp }>
@@ -22,6 +23,9 @@ const session = await joinSession({
 
 // Assign the real session to the ref so the slash command handler can use it
 sessionRef.current = session;
+
+// Capture session context for log grouping
+const sessionContext = buildSessionContext(session);
 
 // Log startup notification (fire-and-forget; ephemeral so it disappears from history)
 session.log('[subagent-inspector] Loaded — watching for subagent invocations', { ephemeral: true }).catch(() => {});
@@ -52,7 +56,7 @@ session.on((event) => {
         const trace = traces.get(event.agentId);
         if (trace) {
             try {
-                const { jsonPath } = writeLogSync(trace);
+                const { jsonPath } = writeLogSync(trace, sessionContext, DEFAULT_LOG_DIR);
                 session.log(toTimelineSummary(trace, jsonPath)).catch(() => {});
             } catch (err) {
                 session.log(`[subagent-inspector] Failed to write log: ${err.message}`, { level: 'warning' }).catch(() => {});
@@ -71,7 +75,7 @@ function flushPartialTraces() {
     for (const trace of traces.values()) {
         if (!trace.status) {
             trace.status = 'partial';
-            try { writeLogSync(trace); } catch {}
+            try { writeLogSync(trace, sessionContext, DEFAULT_LOG_DIR); } catch {}
         }
     }
 }
