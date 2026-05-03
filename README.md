@@ -30,12 +30,12 @@ The postinstall script automatically copies the extension to `~/.copilot/extensi
 
 **Mac/Linux:**
 ```bash
-git clone YOUR-REPO-URL ~/.copilot/extensions/subagent-inspector
+git clone https://github.com/OlgaPechisker/subagent-inspector.git ~/.copilot/extensions/subagent-inspector
 ```
 
 **Windows PowerShell:**
 ```powershell
-git clone YOUR-REPO-URL "$env:USERPROFILE\.copilot\extensions\subagent-inspector"
+git clone https://github.com/OlgaPechisker/subagent-inspector.git "$env:USERPROFILE\.copilot\extensions\subagent-inspector"
 ```
 
 Then restart Copilot CLI:
