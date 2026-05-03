@@ -12,7 +12,21 @@ A GitHub Copilot CLI extension that captures full context, conversation history,
 
 ## 📦 Installation
 
-### Quick Install
+### Option 1: npm (Recommended)
+
+**Global install (auto-configures):**
+```bash
+npm install -g @your-org/copilot-subagent-inspector
+```
+
+The postinstall script automatically copies the extension to `~/.copilot/extensions/subagent-inspector/`.
+
+**Then restart Copilot CLI:**
+```
+/restart
+```
+
+### Option 2: Git Clone
 
 **Mac/Linux:**
 ```bash
@@ -29,7 +43,7 @@ Then restart Copilot CLI:
 /restart
 ```
 
-### Manual Install
+### Option 3: Manual Install
 
 1. Download this repository as a zip file
 2. Extract to:
@@ -126,8 +140,12 @@ All 74 tests should pass ✅
 
 ## 🔄 Updates
 
-To update the extension:
+### NPM Installation
+```bash
+npm update -g @your-org/copilot-subagent-inspector
+```
 
+### Git Installation
 ```bash
 cd ~/.copilot/extensions/subagent-inspector
 git pull
