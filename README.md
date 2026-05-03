@@ -16,7 +16,7 @@ A GitHub Copilot CLI extension that captures full context, conversation history,
 
 **Global install (auto-configures):**
 ```bash
-npm install -g @your-org/copilot-subagent-inspector
+npm install -g @opechisker/copilot-subagent-inspector
 ```
 
 The postinstall script automatically copies the extension to `~/.copilot/extensions/subagent-inspector/`.
@@ -142,7 +142,7 @@ All 74 tests should pass ✅
 
 ### NPM Installation
 ```bash
-npm update -g @your-org/copilot-subagent-inspector
+npm update -g @opechisker/copilot-subagent-inspector
 ```
 
 ### Git Installation

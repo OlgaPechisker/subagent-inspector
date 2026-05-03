@@ -25,9 +25,9 @@
     "logging",
     "debugging"
   ],
-  "author": "opechisker",
+  "author": "OlgaPechisker",
   "repository": {
     "type": "git",
-    "url": "https://github.com/your-org/copilot-subagent-inspector.git"
+    "url": "https://github.com/OlgaPechisker/copilot-subagent-inspector.git"
   }
 }
