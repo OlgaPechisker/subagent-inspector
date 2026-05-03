@@ -1,5 +1,5 @@
 {
-  "name": "@your-org/copilot-subagent-inspector",
+  "name": "@opechisker/copilot-subagent-inspector",
   "version": "1.1.0",
   "description": "Captures full context and logs of Copilot CLI subagent invocations with session-based organization",
   "type": "module",
@@ -25,8 +25,7 @@
     "logging",
     "debugging"
   ],
-  "author": "Your Name",
-  "license": "MIT",
+  "author": "opechisker",
   "repository": {
     "type": "git",
     "url": "https://github.com/your-org/copilot-subagent-inspector.git"
